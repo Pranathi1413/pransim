@@ -10,10 +10,11 @@
 #include <bits/stdc++.h>
 using namespace std;
 using namespace boost::algorithm;
-int r[32];
+int r[32]={0};
 char d[4096]={0};
 int point=0; int hi;
 vector<vector<string>> t={{"add","sub","slt"},{"addi","sll"},{"lw","sw"},{"bne","beq"},{"j"},{"la","li"}};
+vector<int> tn={4,4,3,4,2,3};
 unordered_map <string,int> labelmap;
 unordered_map <string,int> dataseg;
 struct instr
@@ -24,9 +25,9 @@ struct instr
 
 	void disp()
 	{
-		cout<<n<<" "<<type<<" "<<op;
-		cout<<"\nreg:"<<reg[0]<<" "<<reg[1]<<" "<<reg[2];
-		cout<<"\nlabels:"<<label<<" "<<jlabel<<" "<<imm<<endl;
+		std::cout<<n<<" "<<type<<" "<<op;
+		std::cout<<"\nreg:"<<reg[0]<<" "<<reg[1]<<" "<<reg[2];
+		std::cout<<"\nlabels:"<<label<<" "<<jlabel<<" "<<imm<<endl;
 	}
 }I[50];
 
@@ -100,7 +101,7 @@ int get(int ptr)
 int numcheck (string temp)
 {
 	for(int p=0; p<temp.length(); p++)
-				if(!(temp[p]>='0' && temp[p]<='9'))
+				if(!(temp[p]>='0' && temp[p]<='9' || p==0 && (temp[p]=='+' || temp[p]=='-')))
 					return 0;
 	return 1;
 }
@@ -119,11 +120,11 @@ int parse(string str,int c)
 	I[c].n=c;
 	vector<string> result; 
     boost::algorithm::split(result, str, is_any_of(" ,\t")); 
-	/*cout<<endl<<result.size();
+	/*std::cout<<endl<<result.size();
 	for(int l=0;l<result.size();l++)
-		{cout<<result[l]<<" ";
-		if(result[l]=="\0") cout<<"null ";
-		if(result[l]=="\n") cout<<"newline ";
+		{std::cout<<result[l]<<" ";
+		if(result[l]=="\0") std::cout<<"null ";
+		if(result[l]=="\n") std::cout<<"newline ";
 		}*/
 	do
 	{
@@ -143,8 +144,19 @@ int parse(string str,int c)
 				I[c].type = -1;
 				return 1;
 			}
-			i=1;
+            i++;
 		}
+    if(result[0][0]=='#')
+    {
+        I[c].type = -1;
+        return 1;
+    }
+    else if (ch==':' && result.size()>1 && result[1][0]=='#')
+    {
+        I[c].type = -1;
+        return 1;
+    }
+
 	for( j=0; j<6; j++)
 		{
 			for( k=0; k < t[j].size(); k++)
@@ -157,8 +169,9 @@ int parse(string str,int c)
 			if(k < t[j].size())
 				break;
 		}
-	if(j==6)
+	if(j==6 || result.size()<tn[j])
 		return 0;
+    
 	i++;
 	int p;
 	vector<string> temp;
@@ -187,12 +200,12 @@ int parse(string str,int c)
 			I[c].reg[1]=regcheck(temp[1]);
 			if(I[c].reg[1]==-1 || temp.size()!=3) return 0;
 			i+=2;
-			if(i!=result.size()) return 0;
+			//if(i!=result.size()) return 0;
 			break;
 		case 4:
 			I[c].jlabel = result[i];
 			i++;
-			if(i!=result.size()) return 0;
+			//if(i!=result.size()) return 0;
 			break;
 		case 5:
 			I[c].reg[0]=regcheck(result[i]);
@@ -207,7 +220,7 @@ int parse(string str,int c)
 						i++;
 					}
 				else return 0;
-				if(i!=result.size()) return 0;
+				//if(i!=result.size()) return 0;
 
 			}
 			break;
@@ -229,10 +242,10 @@ int parse(string str,int c)
 					string fun=result[i].substr(2,result[i].length()-2);
 					if(numcheckhex(fun))
 						I[c].imm=strtoul(result[i].c_str(),0,16);
-					else {cout<<fun; return 0;}
+					else {return 0;}
 
 				}
-			else {cout<<"hi1"; return 0;}
+			else { return 0;}
 			i++;
 		}
 	else if(I[c].type==3)
@@ -240,9 +253,10 @@ int parse(string str,int c)
 			I[c].jlabel=result[i];
 			i++;
 		}
-	
-	if(i!=result.size()) {cout<<"hi2"; return 0;} 
-	return 1;
+	if(ch==':' && i==tn[j]+1) return 1;
+	else if(i==tn[j]) return 1;
+    else if(result[i][0]=='#') return 1;
+    else return 0;
 }
 
 int execute(int start, int n)
@@ -357,21 +371,27 @@ int main()
 	do
 	{
 		std::getline(f,str);
-	}while(str==" " || str=="\t" || str=="\0" || str=="\n");
+	}while(str==" " || str=="\t" || str=="\0" || str=="\n" || str[0]=='#');
 	/*if(str!=".data")
 		{
-			cout<<"where s data segment";
+			std::cout<<"where s data segment";
 			return 0;
 		}*/
-	if(str!=".data" && str!=".text")
+	vector<string> tmp;
+	boost::algorithm::split(tmp,str,is_any_of(" \t"));
+
+	if(tmp.size()==1 && tmp[0]!=".data" && tmp[0]!=".text")
 		{
-			cout<<"error data/text";
+			std::cout<<"error data/text";
 			return 0;
 		}
+	else if(tmp.size()>1 && tmp[1][0]!='#')
+		return 0;
+	
 	do
 	{
 		std::getline(f,str);
-		if(str=="\0")
+		if(str=="\0" || str[0]=='#')
 			continue;
 		vector<string> temp;
 		boost::algorithm::split(temp,str,is_any_of(" \t:"));
@@ -382,15 +402,15 @@ int main()
 			break;
 		temp.erase(iter);
 		} while (1);
-		if(temp.size()>1)
+		if(temp.size()>1 && temp[1][0]!='#')
 			{
-				cout<<"error";
+				std::cout<<"error";
 				return 0;
 			}
 		if(temp[0]==".text")
 			break;
 		do{
-		std::getline(f,str); } while(str=="\0" || str=="\n");
+		std::getline(f,str); } while(str=="\0" || str=="\n" ||str[0]=='#');
 		vector<string> temp1;
 		boost::algorithm::split(temp1,str,is_any_of(" \t"));
 		do
@@ -407,11 +427,11 @@ int main()
 				{
 					if(numcheck(temp1[k]))
 					{
-						cout<<temp1[k]<<" ";
+						std::cout<<temp1[k]<<" ";
 						fill(stoi(temp1[k]),point+v);
 						v+=4;
 					}
-					else
+					else if(temp1[k][0]!='#')
 						return 0;
 				}
 		}
@@ -421,44 +441,44 @@ int main()
 				
 	} while (1);
 	
-	
 	int c=0;
 	while(std::getline(f,str))
-	{	if(str=="\0" || str=="\n") continue;
+	{	if(str=="\0" || str=="\n" ||str[0]=='#') continue;
 		int p=parse(str,c);
 		I[c].disp();
 		if(p==0) 
 			{
-				cout<<"error on inst "<<c;
+				std::cout<<"error on inst "<<c;
 				return 0;
 			}
 		
 		c++;
 	}
+
+	
 	/*for(int i=0;i<5;i++)
-		cout<<get(4*i)<<" ";*/
+		std::cout<<get(4*i)<<" ";*/
 	int start = maincheck();
 	if(start == -1)
-		{cout<<"no main";
+		{std::cout<<"no main";
 		return 0;
 		}
 	if(labelcheck(c)==0)
 		{
-			cout<<"labels not matched";
+			std::cout<<"labels not matched";
 			return 0;
 		}
-	
 
 	int check = execute(start,c);
 	if(check==0)
-		cout<<"Error";
+		std::cout<<"Error";
 	else
 	{
 		for(int i=0;i<32;i++)
-			cout<<i<<" "<<r[i]<<endl;
+			std::cout<<i<<" "<<r[i]<<endl;
 		
 	}
-	
+
 	
 
 	
