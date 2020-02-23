@@ -12,7 +12,7 @@ using namespace std;
 using namespace boost::algorithm;
 int r[32];
 char d[4096]={0};
-int point=0;
+int point=0; int hi;
 vector<vector<string>> t={{"add","sub","slt"},{"addi","sll"},{"lw","sw"},{"bne","beq"},{"j"},{"la","li"}};
 unordered_map <string,int> labelmap;
 unordered_map <string,int> dataseg;
