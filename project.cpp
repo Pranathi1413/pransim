@@ -12,7 +12,7 @@ using namespace std;
 using namespace boost::algorithm;
 int r[32]={0};
 char d[4096]={0};
-int point=0; int hi;
+int point=0; 
 vector<vector<string>> t={{"add","sub","slt"},{"addi","sll"},{"lw","sw"},{"bne","beq"},{"j"},{"la","li"}};
 vector<int> tn={4,4,3,4,2,3};
 unordered_map <string,int> labelmap;
@@ -261,9 +261,10 @@ int parse(string str,int c)
 
 int execute(int start, int n)
 {
+	
 	int c=start,addr;
 	do
-	{
+	{	
 		switch(I[c].type)
 		{
 			case 0:
@@ -306,11 +307,11 @@ int execute(int start, int n)
 					case 0:
 						if(addr+4<=4096)
 						r[I[c].reg[0]] = get(addr);
-						else return 0;
+						else {cout<<c; return 0;}
 						break;
 					case 1:
 						if(fill(r[I[c].reg[0]],addr)==0)
-							return 0;
+							{ cout<<c; return 0;}
 						break;
 				}
 				c++;
@@ -319,12 +320,12 @@ int execute(int start, int n)
 				switch(I[c].op)
 				{
 					case 0:
-						if(r[I[c].reg[0]]!=r[I[c].reg[0]])
+						if(r[I[c].reg[0]]!=r[I[c].reg[1]])
 							c+=I[c].imm;
 						else c++;
 						break;
 					case 1:
-						if(r[I[c].reg[0]]==r[I[c].reg[0]])
+						if(r[I[c].reg[0]]==r[I[c].reg[1]])
 							c+=I[c].imm;
 						else c++;
 						break;					
@@ -427,7 +428,7 @@ int main()
 				{
 					if(numcheck(temp1[k]))
 					{
-						std::cout<<temp1[k]<<" ";
+						//std::cout<<temp1[k]<<" ";
 						fill(stoi(temp1[k]),point+v);
 						v+=4;
 					}
@@ -445,7 +446,7 @@ int main()
 	while(std::getline(f,str))
 	{	if(str=="\0" || str=="\n" ||str[0]=='#') continue;
 		int p=parse(str,c);
-		I[c].disp();
+		//I[c].disp();
 		if(p==0) 
 			{
 				std::cout<<"error on inst "<<c;
@@ -476,6 +477,9 @@ int main()
 	{
 		for(int i=0;i<32;i++)
 			std::cout<<i<<" "<<r[i]<<endl;
+		cout<<"data seg:"<<endl;
+		for(int i=0;i<point; i+=4)
+			cout<<i<<" "<<get(i)<<endl;
 		
 	}
 
