@@ -11,7 +11,7 @@
 using namespace std;
 using namespace boost::algorithm;
 int r[32]={0};
-char d[4096]={0};
+char d[4096]={0}; 
 int point=0; 
 vector<vector<string>> t={{"add","sub","slt"},{"addi","sll"},{"lw","sw"},{"bne","beq"},{"j"},{"la","li"}};
 vector<int> tn={4,4,3,4,2,3};
@@ -59,7 +59,7 @@ int labelcheck(int n)
 }
 
 int regcheck(string reg)
-{	if(reg.length()!=2) return -1;
+{	if(reg.length()<2 || reg.length()>3) return -1;
 	if(reg[0]=='r' || reg[0]=='R')
 		{
 			int r=stoi(reg.substr(1,reg.length()-1));
@@ -352,11 +352,103 @@ int execute(int start, int n)
 				c++;
 				break;
 		}
-	if(c==n)break;
+	if(c-start==n)break;
 	} while (1);
 	return 1;
 }
 
+int execstep(int c)
+{
+	int addr;
+	switch(I[c].type)
+		{
+			case 0:
+				switch(I[c].op)
+				{
+					case 0:
+						r[I[c].reg[0]] = r[I[c].reg[1]] + r[I[c].reg[2]];
+						break;
+					case 1:
+						r[I[c].reg[0]] = r[I[c].reg[1]] - r[I[c].reg[2]];
+						break;
+					case 2:
+						if(r[I[c].reg[1]]<r[I[c].reg[2]])
+							r[I[c].reg[0]] = 1;
+						else
+							r[I[c].reg[0]] = 0;
+						break;
+				}
+				c++;
+				break;
+			case 1:
+				switch(I[c].op)
+				{
+					case 0:
+						r[I[c].reg[0]] = r[I[c].reg[1]] + I[c].imm;
+						break;
+					case 1:
+						if(I[c].imm>=0)
+							r[I[c].reg[0]] = r[I[c].reg[1]] << I[c].imm;
+						else
+							r[I[c].reg[0]] = r[I[c].reg[1]] >> (-I[c].imm);
+						break;
+				}
+				c++;
+				break;
+			case 2:
+				addr=r[I[c].reg[1]] + I[c].imm;
+				switch(I[c].op)
+				{
+					case 0:
+						if(addr+4<=4096)
+						r[I[c].reg[0]] = get(addr);
+						else {cout<<c; return -1;}
+						break;
+					case 1:
+						if(fill(r[I[c].reg[0]],addr)==0)
+							{ cout<<c; return -1;}
+						break;
+				}
+				c++;
+				break;
+			case 3:
+				switch(I[c].op)
+				{
+					case 0:
+						if(r[I[c].reg[0]]!=r[I[c].reg[1]])
+							c+=I[c].imm;
+						else c++;
+						break;
+					case 1:
+						if(r[I[c].reg[0]]==r[I[c].reg[1]])
+							c+=I[c].imm;
+						else c++;
+						break;					
+				}
+				break;
+			case 4:
+				switch(I[c].op)
+				{
+					case 0:
+						c+=I[c].imm;
+						break;
+				}
+				break;
+			case 5:
+				switch(I[c].op)
+				{
+					case 0: case 1:
+						r[I[c].reg[0]] = I[c].imm;
+						c++;
+						break;					
+				}
+				break;
+			case -1:
+				c++;
+				break;
+		}
+	return c;
+}
 int maincheck()
 {
 	auto itr = findinmap(labelmap,"main");
@@ -367,7 +459,12 @@ int maincheck()
 
 int main()
 {
-	ifstream f("input.asm");
+	cout<<"Enter .asm filename(with extension):";
+	string s;
+	cin>>s;
+	ifstream f(s);
+	if(!f)
+		{cout<<"File not found"; return 0;}
 	string str;
 	do
 	{
@@ -383,12 +480,13 @@ int main()
 
 	if(tmp.size()==1 && tmp[0]!=".data" && tmp[0]!=".text")
 		{
-			std::cout<<"error data/text";
+			std::cout<<"\nError no data/text segment";
 			return 0;
 		}
 	else if(tmp.size()>1 && tmp[1][0]!='#')
-		return 0;
-	
+		{cout<<"Error"; return 0;}
+	if(tmp[0]==".text")
+		goto label;
 	do
 	{
 		std::getline(f,str);
@@ -405,11 +503,11 @@ int main()
 		} while (1);
 		if(temp.size()>1 && temp[1][0]!='#')
 			{
-				std::cout<<"error";
+				std::cout<<"\nError";
 				return 0;
 			}
 		if(temp[0]==".text")
-			break;
+			{ break;}
 		do{
 		std::getline(f,str); } while(str=="\0" || str=="\n" ||str[0]=='#');
 		vector<string> temp1;
@@ -433,15 +531,15 @@ int main()
 						v+=4;
 					}
 					else if(temp1[k][0]!='#')
-						return 0;
+						{cout<<"\nError"; return 0;}
 				}
 		}
-		else return 0;
+		else {cout<<"\nError"; return 0;}
 		dataseg[temp[0]]=point;
 		point+=v;
 				
 	} while (1);
-	
+	label:
 	int c=0;
 	while(std::getline(f,str))
 	{	if(str=="\0" || str=="\n" ||str[0]=='#') continue;
@@ -449,7 +547,7 @@ int main()
 		//I[c].disp();
 		if(p==0) 
 			{
-				std::cout<<"error on inst "<<c;
+				std::cout<<"\nError on inst "<<c;
 				return 0;
 			}
 		
@@ -461,26 +559,68 @@ int main()
 		std::cout<<get(4*i)<<" ";*/
 	int start = maincheck();
 	if(start == -1)
-		{std::cout<<"no main";
+		{std::cout<<"\nError No main";
 		return 0;
 		}
 	if(labelcheck(c)==0)
 		{
-			std::cout<<"labels not matched";
+			std::cout<<"\nError Labels not matched";
 			return 0;
 		}
-
-	int check = execute(start,c);
-	if(check==0)
-		std::cout<<"Error";
-	else
+	cout<<endl<<"\n1.Run\t2.Run step by step\nYour choice:";
+	int choice; int cur=0, check, key;
+	cin>>choice;
+	switch(choice)
 	{
-		for(int i=0;i<32;i++)
-			std::cout<<i<<" "<<r[i]<<endl;
-		cout<<"data seg:"<<endl;
-		for(int i=0;i<point; i+=4)
-			cout<<i<<" "<<get(i)<<endl;
+	case 1:
+		check = execute(start,c);
+		if(check==0)
+			std::cout<<"\nError";
+		else
+		{
+			for(int i=0;i<32;i++)
+				{std::cout<<"r"<<i<<"="<<r[i]<<"\t";
+				if((i+1)%4==0)
+					cout<<endl;
+				}
+			cout<<"\nData segment:"<<endl;
+			for(int i=0;i<point; i+=4)
+				cout<<i<<": "<<get(i)<<endl;
+			if(point==0)
+				cout<<0<<endl;
 		
+		}
+		break;
+	case 2:
+			cout<<"\nPress Enter to move forward a step and q to quit\n";
+			while(cur!=c)
+				{	key=cin.get();
+					if(key=='q')
+						break;
+					int temp=cur;
+					
+					cur=execstep(cur);
+					if(cur==-1)
+						{
+							cout<<"\nError on inst. "<<temp;
+							break;
+						}
+					cout<<"\nExecuted inst. "<<temp<<endl;
+					for(int i=0;i<32;i++)
+					{std::cout<<"r"<<i<<"="<<r[i]<<"\t";
+					if((i+1)%4==0)
+						cout<<endl;
+					}
+					cout<<"\nData segment:"<<endl;
+					for(int i=0;i<point; i+=4)
+						cout<<i<<": "<<get(i)<<endl;
+					if(point==0)
+						cout<<0<<endl;
+				}
+			break;
+		default:
+			cout<<"\nWrong choice!";
+			break;
 	}
 
 	

@@ -3,8 +3,11 @@
 arr  
 	.word 3 5 2 1 -4
 .text 
-main: 
-	la r0,arr     #r0 has base addr
+main:	
+la r0,arr     
+	li r10, 3
+	sll r10,r10,2
+	sll r10,r10,-2
 	li r1,1		#r1 has true value
 	li r2,0      	#r2 is i
 	li r4,4 	#r4 has n
