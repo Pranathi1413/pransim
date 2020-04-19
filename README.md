@@ -11,4 +11,6 @@ Instructions to use this simulator:
 They all have the usual meaning (like mips). sll can take negative immediate values, which would mean srl of the absolute value.
 9. Only single line comments are allowed (starting with '#')
 
-Note: Kindly make sure you have the necessary header files and libraries that have been included in the code (like the boost library)
+Note1: Kindly make sure you have the necessary header files and libraries that have been included in the code (like the boost library)
+
+Note2: input.asm contains example code for bubble sort
