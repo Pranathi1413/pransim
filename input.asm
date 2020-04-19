@@ -1,16 +1,16 @@
 #bubble sort
 .data
 arr  
-	.word 3 5 2 1 -4
+	.word 3 5 2 1 -4 -3
 .text 
 main:	
-la r0,arr     
+	la r0,arr     
 	li r10, 3
 	sll r10,r10,2
 	sll r10,r10,-2
 	li r1,1		#r1 has true value
 	li r2,0      	#r2 is i
-	li r4,4 	#r4 has n
+	li r4,5 	#r4 has n
 for1:   slt r5,r2,r4  	
 	bne r5,r1,exit1
 	li r3,0 	#r3 has j
