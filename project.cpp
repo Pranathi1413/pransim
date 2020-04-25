@@ -7,7 +7,6 @@
 #include <cstdlib>
 #include <fstream>
 #include <vector>
-#include <bits/stdc++.h>
 using namespace std;
 using namespace boost::algorithm;
 int r[32]={0};
