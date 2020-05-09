@@ -1,0 +1,8 @@
+l1_size in bytes: 16
+l2_size in bytes: 64
+block_size in bytes: 8
+l1_associativity (one for direct mapped, zero for fully associative): 2 
+l2_associativity: 2
+l1_latency in clock cycles: 1
+l2_latency: 4
+main memory latency: 10
