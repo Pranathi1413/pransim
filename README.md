@@ -1,7 +1,7 @@
 # pransim
 New instructions:
 1. The Run and Run step-by-step option does not implement pipeling or cache.
-2. The third option i.e. Run with pipelining implements pipeling AND two levels of cahe with LRU policy.
+2. The third option i.e. Run with pipelining implements pipelining AND two levels of cahe with LRU policy.
 3. The input for details of cache is to be given in the cache_details.txt file. Kindly stick to the template/format in this text file and just modify the numbers in this file while testing the code.
 
 Instructions to use this simulator:
