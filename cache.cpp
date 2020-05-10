@@ -5,11 +5,14 @@
 #include <cstring>
 #include <string>
 #include <cstdlib>
+#include <cstdio>
 #include <fstream>
 #include <vector>
 #include <cmath>
 using namespace std;
 using namespace boost::algorithm;
+int total_mem_acc = 0, l1_miss = 0, l2_miss = 0;
+int total_instr = 0;
 int bl_size, bl_spill = 0;
 int mem_stall;
 int r[32] = {0};
@@ -705,6 +708,7 @@ void insf(int n)
     }
     else
     {
+        total_instr++;
         if_id = _if;
         //cout<<_if.ino<<" ";
         if (I[_if.ino].type == 3)
@@ -957,10 +961,11 @@ void mem(int n)
             switch (I[c].op)
             {
             case 0:
+                total_mem_acc++;
                 addr = ex_mem.result;
                 ME.flag = 1;
-                stallcount += l1.stall;
-                ME.stall += l1.stall;
+                stallcount += l1.stall - 1;
+                ME.stall += l1.stall - 1;
                 ptr = l1.find_in_cache(addr, 0);
                 if (ptr != NULL)
                 {
@@ -982,6 +987,7 @@ void mem(int n)
                 }
                 else
                 {
+                    l1_miss++;
                     ME.stall += l2.stall;
                     stallcount += l2.stall;
                     ptr = l2.find_in_cache(addr, 0);
@@ -1006,6 +1012,7 @@ void mem(int n)
                     }
                     else
                     {
+                        l2_miss++;
                         ME.stall += mem_stall;
                         stallcount += mem_stall;
                         for (int i = 0; i <= 3; i++)
@@ -1026,8 +1033,9 @@ void mem(int n)
                 addr = ex_mem.result;
                 a = (char *)&reg0;
                 ME.flag = 1;
-                ME.stall += l1.stall;
-                stallcount += l1.stall;
+                total_mem_acc++;
+                ME.stall += l1.stall - 1;
+                stallcount += l1.stall - 1;
                 ptr = l1.find_in_cache(addr, 1);
                 if (ptr != NULL)
                 {
@@ -1050,6 +1058,7 @@ void mem(int n)
                 }
                 else
                 {
+                    l1_miss++;
                     ME.stall += l2.stall;
                     stallcount += l2.stall;
                     ptr = l2.find_in_cache(addr, 1);
@@ -1074,6 +1083,7 @@ void mem(int n)
                     }
                     else
                     {
+                        l2_miss++;
                         ME.stall += mem_stall;
                         stallcount += mem_stall;
                         for (int i = 0; i <= 3; i++)
@@ -1223,6 +1233,7 @@ int maincheck()
 
 int main()
 {
+    float normal_cycles, IPC;
     cout << "Enter .asm filename(with extension):";
     string s;
     cin >> s;
@@ -1585,6 +1596,24 @@ label:
             cout << i << ": " << get(i) << endl;
 
         cout << "\nNumber of stalls: " << stallcount;
+        if (total_mem_acc == 0)
+            cout << "\nL1 miss rate: 0\nL2 miss rate: 0";
+        else
+        {
+            float l1_miss_rate = (float)(l1_miss) / total_mem_acc;
+            printf("\nL1 miss rate: %.2f", l1_miss_rate);
+            if (l1_miss == 0)
+                cout << "L2 miss rate: 0";
+            else
+            {
+                float l2_miss_rate = (float)(l2_miss) / l1_miss;
+                printf("\nL2 miss rate: %.2f", l2_miss_rate);
+            }
+        }
+        normal_cycles = 5 + (total_instr - 1);
+        //cout << total_instr << endl;
+        IPC = total_instr / (normal_cycles + stallcount);
+        printf("\nIPC: %.3f", IPC);
         //cout << "\nblock spills: " << bl_spill;
         flush_l1();
         flush_l2();
